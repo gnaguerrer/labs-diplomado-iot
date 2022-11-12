@@ -1,0 +1,19 @@
+10:42:47 **** Clean-only build of configuration Debug for project K32L2B31A_Project ****
+make -r -j8 clean 
+rm -rf ./utilities/fsl_debug_console.d ./utilities/fsl_debug_console.o ./utilities/fsl_str.d ./utilities/fsl_str.o
+rm -rf ./startup/startup_k32l2b31a.d ./startup/startup_k32l2b31a.o
+rm -rf ./source/libraries/leds.d ./source/libraries/leds.o ./source/libraries/lightSensor.d ./source/libraries/lightSensor.o ./source/libraries/lpuart0.d ./source/libraries/lpuart0.o
+rm -rf ./source/K32L2B31A_Project.d ./source/K32L2B31A_Project.o ./source/mtb.d ./source/mtb.o ./source/semihost_hardfault.d ./source/semihost_hardfault.o
+rm -rf ./drivers/fsl_adc16.d ./drivers/fsl_adc16.o ./drivers/fsl_clock.d ./drivers/fsl_clock.o ./drivers/fsl_common.d ./drivers/fsl_common.o ./drivers/fsl_common_arm.d ./drivers/fsl_common_arm.o ./drivers/fsl_gpio.d ./drivers/fsl_gpio.o ./drivers/fsl_lpuart.d ./drivers/fsl_lpuart.o ./drivers/fsl_smc.d ./drivers/fsl_smc.o ./drivers/fsl_spi.d ./drivers/fsl_spi.o ./drivers/fsl_uart.d ./drivers/fsl_uart.o
+rm -rf ./device/system_K32L2B31A.d ./device/system_K32L2B31A.o
+rm -rf ./component/uart/fsl_adapter_lpuart.d ./component/uart/fsl_adapter_lpuart.o
+rm -rf ./component/serial_manager/fsl_component_serial_manager.d ./component/serial_manager/fsl_component_serial_manager.o ./component/serial_manager/fsl_component_serial_port_uart.d ./component/serial_manager/fsl_component_serial_port_uart.o
+rm -rf ./component/lists/fsl_component_generic_list.d ./component/lists/fsl_component_generic_list.o
+rm -rf ./board/board.d ./board/board.o ./board/clock_config.d ./board/clock_config.o ./board/peripherals.d ./board/peripherals.o ./board/pin_mux.d ./board/pin_mux.o
+rm -rf K32L2B31A_Project.axf
+rm: can't remove 'K32L2B31A_Project.axf': Permission denied
+make: [makefile:61: clean] Error 1 (ignored)
+ 
+
+10:42:47 Build Finished. 0 errors, 0 warnings. (took 217ms)
+

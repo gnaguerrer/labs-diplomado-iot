@@ -19,6 +19,14 @@ int main(void) {
 	BOARD_InitBootClocks();
 	BOARD_InitBootPeripherals();
 #ifndef BOARD_INIT_DEBUG_CONSOLE_PERIPHERAL
+	BOARD_InitDebugConsole();
+#endif
+
+	while (1) {
+		if (read_data_from_uart0() != 0) {
+			switch (read_data_from_uart0()) {
+			case 82:
+				PRINTF("Turn on red \r\n");
 				LED_RED_ON();
 				break;
 			case 114:
@@ -42,6 +50,5 @@ int main(void) {
 			}
 			set_data_uart0(0);
 		}
-
 	}
 }
