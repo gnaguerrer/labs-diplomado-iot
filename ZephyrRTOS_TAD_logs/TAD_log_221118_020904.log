@@ -1,0 +1,6 @@
+"Task Aware Debugger for GDB" version 11.6.1 (202207200623)
+(c) 2016-2022 NXP Semiconductors, Inc.
+==================================
+02:08:53.772 INFO: [ZephyrRTOS] C:\Users\gnagu\Documents\Unimag\IoT\labs-diplomado-iot\K32L2B31A_Project\Debug\.config file could not be read
+02:08:53.772 INFO: [TadModel] DSF session ID 111 has started.
+02:09:04.785 INFO: [TadModel] DSF session ID 111 has ended.

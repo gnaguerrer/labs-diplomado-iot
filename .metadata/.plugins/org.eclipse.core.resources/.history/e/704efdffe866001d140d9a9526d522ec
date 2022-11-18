@@ -1,0 +1,323 @@
+/*!@file : K32L2B31A_Project.c
+ * @author  Gina Paola Guerrero Martínez
+ * @version 0.00
+ * @date    17/10/2022
+ * @brief   Funcion principal main
+ * @details
+ *			v0.000	Proyecto base creado usando MCUXpresso
+ *
+ *
+ */
+/*******************************************************************************
+ * Includes
+ ******************************************************************************/
+
+#include <stdio.h>
+#include <stdio.h>
+#include "board.h"
+#include "peripherals.h"
+#include "pin_mux.h"
+#include "clock_config.h"
+#include "K32L2B31A.h"
+#include "fsl_device_registers.h"
+#include "fsl_debug_console.h"
+
+#include "fsl_common.h"
+#include "lpuart0.h"
+#include "leds.h"
+#include "lightSensor.h"
+
+/*******************************************************************************
+ * Definitions
+ ******************************************************************************/
+
+enum STATES {
+	FSM_STATE_START = 0,
+	FSM_STATE_AWAIT_NEW_DATA_UART,
+	FSM_STATE_CHECK_DATA_UART,
+	FSM_STATE_SEND_COMD_ATI,
+	FSM_STATE_SEND_COMD_GMI,
+	FSM_STATE_SEND_COMD_GMM,
+	FSM_STATE_SEND_COMD_GMR,
+	FSM_STATE_SEND_COMD_CGMI,
+	FSM_STATE_CHECK_COMD_ATI,
+	FSM_STATE_CHECK_COMD_GMI,
+	FSM_STATE_CHECK_COMD_GMM,
+	FSM_STATE_CHECK_COMD_GMR,
+	FSM_STATE_CHECK_COMD_CGMI,
+	FSM_STATE_READ_ADC,
+};
+
+enum CMD_AT {
+	CMD_AT_ATI_Display_Product_Identification_Information = 0,
+	CMD_AT_AT_GMI_Request_Manufacturer_Identification,
+	CMD_AT_AT_GMM_Request_TA_Model_Identification,
+	CMD_AT_AT_GMR_Request_TA_Revision_Identification_of_Software_Release,
+	CMD_AT_AT_CGMI_Request_Manufacturer_Identification,
+};
+
+typedef struct _iot_nodo_data {
+	uint16_t data_sensor_luz_adc;
+	uint16_t data_sensor_luz_lux;
+	//------------------------------------
+	uint8_t data_sensor_luz_voltaje;
+	uint8_t data_sensor_temperatura;
+	uint16_t data_sensor_humedad;
+	//------------------------------------
+	uint16_t data_sensor_presion_atmosferica;
+	uint16_t reservado;
+//------------------------------------
+} iot_nodo_data_t;
+
+typedef struct _sigfox_frame {
+	uint32_t preamble;
+	uint16_t frame_sync;
+	uint32_t end_point_id;
+	uint8_t payload[12];
+	uint16_t auth;
+	uint16_t fcs;
+} sigfox_frame_t;
+
+/*******************************************************************************
+ * Private Prototypes
+ ******************************************************************************/
+
+/*******************************************************************************
+ * External vars
+ ******************************************************************************/
+
+/*******************************************************************************
+ * Local vars
+ ******************************************************************************/
+uint8_t fst_current_state = FSM_STATE_START;
+
+/* Force the counter to be placed into memory. */
+
+
+const char *cmd_at[5] = {
+		"ATI\r\n",		//c
+		"AT+GMI\r\n",	//d
+		"AT+GMM\r\n",	//e
+		"AT+GMR\r\n",	//f
+		"AT+CGMI\r\n",	//g
+};
+
+iot_nodo_data_t local_data;
+sigfox_frame_t sigfox_frame;
+
+/*******************************************************************************
+ * Private Source Code
+ ******************************************************************************/
+
+void ec25_print_data_raw(uint8_t *data_ptr, uint32_t data_size) {
+	for (uint32_t i = 0; i < data_size; i++) {
+		PRINTF("%c", *(data_ptr + i));
+	}
+}
+
+void ec25_print_data_ascii_hex(uint8_t *data_ptr, uint32_t data_size) {
+	for (uint32_t i = 0; i < data_size; i++) {
+		PRINTF("0x%02x ", *(data_ptr + i));
+	}
+}
+
+char * data;
+
+int main(void) {
+
+	/* Init board hardware. */
+	BOARD_InitBootPins();
+	BOARD_InitBootClocks();
+	BOARD_InitBootPeripherals();
+#ifndef BOARD_INIT_DEBUG_CONSOLE_PERIPHERAL
+	BOARD_InitDebugConsole();
+#endif
+//	if (strstr("MANERA", "ERM")) {
+//		PRINTF("Encontrada");
+//	} else {
+//		PRINTF("No encontrada");
+//	}
+	while (1) {
+		switch (fst_current_state) {
+		case FSM_STATE_START:
+			/*Escribir condiciones iniciales para le ejecución de toda la FSM*/
+			local_data.data_sensor_luz_adc = 1;
+			local_data.data_sensor_luz_voltaje = 2;
+			local_data.data_sensor_luz_lux = 3;
+			local_data.data_sensor_temperatura = 4;
+			local_data.data_sensor_humedad = 5;
+			local_data.data_sensor_presion_atmosferica = 6;
+//			reset_buffer();
+			fst_current_state = FSM_STATE_AWAIT_NEW_DATA_UART;
+			break;
+
+		case FSM_STATE_AWAIT_NEW_DATA_UART:
+			if (has_new_data() != 0) {
+				set_data_uart0(0);
+				fst_current_state = FSM_STATE_CHECK_DATA_UART;
+			}
+			break;
+
+		case FSM_STATE_CHECK_DATA_UART:
+			data = read_buffer();
+			fst_current_state = FSM_STATE_SEND_COMD_ATI;
+//			switch (read_data_from_uart0()) {
+//
+//			case 'l':
+//				//reset_buffer();
+//				fst_current_state = FSM_STATE_READ_ADC;
+//				break;
+//			case 'c':
+//				//reset_buffer();
+//				fst_current_state = FSM_STATE_SEND_COMD_ATI;
+//				break;
+//			case 'd':
+////				reset_buffer();
+//				fst_current_state = FSM_STATE_SEND_COMD_GMI;
+//				break;
+//			case 'e':
+////				reset_buffer();
+//				fst_current_state = FSM_STATE_SEND_COMD_GMM;
+//				break;
+//			case 'f':
+////				reset_buffer();
+//				fst_current_state = FSM_STATE_SEND_COMD_GMR;
+//				break;
+//			case 'g':
+////				reset_buffer();
+//				fst_current_state = FSM_STATE_SEND_COMD_CGMI;
+//				break;
+//			case 'b':
+////				reset_buffer();
+//				break;
+//			default:
+//				fst_current_state = FSM_STATE_START;
+//				break;
+//			}
+			break;
+
+		case FSM_STATE_SEND_COMD_ATI:
+			PRINTF("%s",
+					cmd_at[CMD_AT_ATI_Display_Product_Identification_Information]);
+			fst_current_state = FSM_STATE_CHECK_COMD_ATI;
+			break;
+
+		case FSM_STATE_CHECK_COMD_ATI:
+			PRINTF("Datos: %s", &data);
+//			ec25_print_data_raw(data, sizeof(data));
+//			reset_buffer();
+//			data = read_buffer();
+//			ec25_print_data_raw(data, sizeof(data));
+			//fst_current_state = FSM_STATE_START;
+			break;
+
+		case FSM_STATE_SEND_COMD_GMI:
+			PRINTF("%s",
+					cmd_at[CMD_AT_AT_GMI_Request_Manufacturer_Identification]);
+			fst_current_state = FSM_STATE_CHECK_COMD_GMI;
+			break;
+
+		case FSM_STATE_CHECK_COMD_GMI:
+			read_data_from_uart0();
+			fst_current_state = FSM_STATE_START;
+			break;
+
+		case FSM_STATE_SEND_COMD_GMM:
+			PRINTF("%s",
+					cmd_at[CMD_AT_AT_GMM_Request_TA_Model_Identification]);
+			fst_current_state = FSM_STATE_CHECK_COMD_GMM;
+			break;
+
+		case FSM_STATE_CHECK_COMD_GMM:
+			read_data_from_uart0();
+			fst_current_state = FSM_STATE_START;
+			break;
+
+		case FSM_STATE_SEND_COMD_GMR:
+			PRINTF("%s",
+					cmd_at[CMD_AT_AT_GMR_Request_TA_Revision_Identification_of_Software_Release]);
+			fst_current_state = FSM_STATE_CHECK_COMD_GMR;
+			break;
+
+		case FSM_STATE_CHECK_COMD_GMR:
+			read_data_from_uart0();
+			fst_current_state = FSM_STATE_START;
+			break;
+
+		case FSM_STATE_SEND_COMD_CGMI:
+			PRINTF("%s",
+					cmd_at[CMD_AT_AT_CGMI_Request_Manufacturer_Identification]);
+			fst_current_state = FSM_STATE_CHECK_COMD_CGMI;
+			break;
+
+		case FSM_STATE_CHECK_COMD_CGMI:
+			read_data_from_uart0();
+			fst_current_state = FSM_STATE_START;
+			break;
+
+		case FSM_STATE_READ_ADC:
+			local_data.data_sensor_luz_adc = read_adc_value();
+			PRINTF("data_sensor_luz_adc: %d\r\n",
+					local_data.data_sensor_luz_adc);
+			fst_current_state = FSM_STATE_START;
+			break;
+
+		default:
+			//fst_current_state = FSM_STATE_START;
+			break;
+		}
+	}
+	return 0;
+
+	/*
+	 local_data.data_sensor_luz_adc = 1;
+	 local_data.data_sensor_luz_lux = 1;
+	 local_data.data_sensor_luz_voltaje = 1;
+	 local_data.data_sensor_temperatura = 1;
+	 local_data.data_sensor_humedad = 1;
+	 local_data.data_sensor_presion_atmosferica = 1;
+	 local_data.reservado = 1;
+
+	 while (1) {
+
+	 if (read_data_from_uart0() != 0) {
+	 switch (read_data_from_uart0()) {
+	 case 82:
+	 PRINTF("Turn on red \r\n");
+	 LED_RED_ON();
+	 break;
+	 case 114:
+	 PRINTF("Turn off red \r\n");
+	 LED_RED_OFF();
+	 break;
+	 case 86:
+	 PRINTF("Turn on green \r\n");
+	 LED_GREEN_ON();
+	 break;
+	 case 118:
+	 PRINTF("Turn off green \r\n");
+	 LED_GREEN_OFF();
+	 break;
+	 case 108:
+	 PRINTF("Reading light sensor \r\n");
+	 PRINTF("ADC Value: %d \r\n", read_adc_value());
+	 local_data.data_sensor_luz_adc = read_adc_value();
+	 break;
+	 case 115:
+	 sigfox_frame.preamble = 0x0001;
+	 sigfox_frame.frame_sync = 0x0001;
+	 sigfox_frame.end_point_id = 0x0001;
+	 memcpy(&sigfox_frame.payload[0], (uint8_t*) (&local_data),
+	 sizeof(local_data));
+	 sigfox_frame.auth = 0x0001;
+	 sigfox_frame.fcs = 0x0001;
+	 ec25_print_data_raw((uint8_t*) (&sigfox_frame),
+	 sizeof(sigfox_frame));
+	 break;
+	 default:
+	 break;
+	 }
+	 set_data_uart0(0);
+	 }
+	 } */
+}
